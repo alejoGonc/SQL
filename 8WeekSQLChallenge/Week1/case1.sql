@@ -25,9 +25,66 @@ WHERE row_num = 1;
 
 -- What is the most purchased item on the menu and how many times was it purchased by all customers?
 
+select top 1 menu.product_name, count(sales.product_id) as total
+from sales
+inner join menu on sales.product_id = menu.product_id
+group by menu.product_name
+order by total desc
+
 -- Which item was the most popular for each customer?
 
+WITH RankedSales AS (
+  SELECT
+    members.customer_id,
+    menu.product_id,
+    menu.product_name,
+    COUNT(sales.product_id) AS total_purchased,
+    ROW_NUMBER() OVER (PARTITION BY members.customer_id ORDER BY COUNT(sales.product_id) DESC) AS rn
+  FROM
+    sales
+    INNER JOIN menu ON sales.product_id = menu.product_id
+    INNER JOIN members ON sales.customer_id = members.customer_id
+  GROUP BY
+    members.customer_id,
+    menu.product_id,
+    menu.product_name
+)
+SELECT
+  customer_id,
+  product_id,
+  total_purchased,
+  product_name
+FROM
+  RankedSales
+WHERE
+  rn = 1;
+
 -- Which item was purchased first by the customer after they became a member?
+-- (revisar)
+
+WITH RankedSales AS (
+  SELECT
+    members.customer_id,
+    menu.product_id,
+    menu.product_name,
+    sales.order_date,
+    ROW_NUMBER() OVER (PARTITION BY members.customer_id ORDER BY sales.order_date) AS rn
+  FROM
+    sales
+    INNER JOIN menu ON sales.product_id = menu.product_id
+    INNER JOIN members ON sales.customer_id = members.customer_id
+  WHERE
+    sales.order_date >= members.join_date
+)
+select 
+customer_id,
+product_id,
+product_name,
+order_date
+FROM
+    RankedSales
+    WHERE
+    rn = 1;
 
 -- Which item was purchased just before the customer became a member?
 
