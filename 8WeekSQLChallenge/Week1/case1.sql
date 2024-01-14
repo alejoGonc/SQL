@@ -60,7 +60,6 @@ WHERE
   rn = 1;
 
 -- Which item was purchased first by the customer after they became a member?
--- (revisar)
 
 WITH RankedSales AS (
   SELECT
@@ -88,9 +87,39 @@ FROM
 
 -- Which item was purchased just before the customer became a member?
 
+select customer_id, product_id, product_name, order_date
+from (
+    select 
+    members.customer_id,
+    menu.product_id,
+    menu.product_name,
+    sales.order_date,
+    ROW_NUMBER() OVER (PARTITION BY members.customer_id ORDER BY sales.order_date desc) AS rn
+    from sales
+    inner join menu on sales.product_id = menu.product_id
+    inner join members on sales.customer_id = members.customer_id
+    where sales.order_date < members.join_date
+) t
+where rn = 1; 
+
 -- What is the total items and amount spent for each member before they became a member?
 
+SELECT
+s.customer_id,
+COUNT(e.product_id) as items,
+SUM(e.price) as gastado
+FROM sales s
+JOIN menu e 
+ON (s.product_id = e.product_id)
+JOIN members b
+ON (s.customer_id = b.customer_id) 
+WHERE s.order_date < b.join_date
+GROUP BY s.customer_id
+ORDER BY s.customer_id
+
 -- If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+
+
 
 -- In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not
 -- just sushi - how many points do customer A and B have at the end of January?
