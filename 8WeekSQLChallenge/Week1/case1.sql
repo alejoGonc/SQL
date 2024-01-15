@@ -119,7 +119,26 @@ ORDER BY s.customer_id
 
 -- If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
 
-
+select customer_id, sum(points) as total_points
+from (
+    select sales.customer_id, menu.product_name, menu.price, 
+    case when menu.product_name = 'sushi' then menu.price * 20 else menu.price * 10 end as points
+    from sales
+    inner join menu on sales.product_id = menu.product_id
+) t
+group by customer_id
 
 -- In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not
 -- just sushi - how many points do customer A and B have at the end of January?
+
+SELECT customer_id, SUM(points) AS total_points
+FROM (
+    SELECT sales.customer_id, menu.product_name, menu.price, members.join_date, 
+    menu.price * 20 AS points
+    FROM sales
+    INNER JOIN menu ON sales.product_id = menu.product_id
+    INNER JOIN members ON sales.customer_id = members.customer_id
+    WHERE sales.order_date >= members.join_date
+    AND sales.order_date <= DATEADD(WEEK, 1, members.join_date)
+) t
+GROUP BY customer_id;
